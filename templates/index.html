@@ -32,6 +32,20 @@
             padding: 15px 20px;
             font-size: 1.2rem;
             font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .settings-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
         }
         .chat-messages {
             flex: 1;
@@ -156,6 +170,7 @@
             margin: 20px;
             font-size: 24px;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         .mic-button.listening {
             background-color: #EA4335;
@@ -163,6 +178,7 @@
         }
         .mic-button:hover {
             background-color: #3367D6;
+            transform: scale(1.05);
         }
         .status-text {
             font-size: 1.2rem;
@@ -170,15 +186,150 @@
             text-align: center;
             min-height: 30px;
         }
+        .visualizer-container {
+            width: 100%;
+            height: 60px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .visualizer {
+            display: flex;
+            align-items: flex-end;
+            height: 60px;
+            width: 300px;
+            gap: 2px;
+        }
+        .visualizer-bar {
+            background-color: #4285F4;
+            width: 4px;
+            height: 5px;
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
+        .settings-panel {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 15px;
+            z-index: 100;
+            display: none;
+        }
+        .settings-panel.visible {
+            display: block;
+        }
+        .settings-option {
+            margin-bottom: 15px;
+        }
+        .settings-option label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .settings-option select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #4285F4;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        .voice-commands {
+            margin-top: 20px;
+            background-color: #E8F0FE;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 0.9rem;
+        }
+        .voice-commands h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: #4285F4;
+        }
+        .voice-commands ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .voice-commands li {
+            margin-bottom: 5px;
+        }
         @keyframes pulse {
             0% {
                 transform: scale(1);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             }
             50% {
-                transform: scale(1.1);
+                transform: scale(1.05);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
             }
             100% {
                 transform: scale(1);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+        }
+        .speech-wave {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+            width: 200px;
+            margin: 10px auto;
+        }
+        .speech-bar {
+            background-color: #4285F4;
+            width: 4px;
+            height: 5px;
+            margin: 0 2px;
+            border-radius: 2px;
+            animation: sound 0ms -800ms linear infinite alternate;
+        }
+        @keyframes sound {
+            0% {
+                height: 5px;
+            }
+            100% {
+                height: 30px;
             }
         }
     </style>
@@ -198,16 +349,58 @@
         </div>
         <div class="chat-container">
             <div class="chat-header">
-                Gemini Voice Assistant
+                <span>Gemini Voice Assistant</span>
+                <div class="header-controls">
+                    <button id="settings-button" class="settings-button" title="Settings">⚙️</button>
+                </div>
+            </div>
+            <div id="settings-panel" class="settings-panel">
+                <div class="settings-option">
+                    <label for="voice-select">Assistant Voice</label>
+                    <select id="voice-select">
+                        <option value="en-US">English (US)</option>
+                        <option value="en-GB">English (UK)</option>
+                        <option value="en-AU">English (Australia)</option>
+                        <option value="en-IN">English (India)</option>
+                    </select>
+                </div>
+                <div class="settings-option">
+                    <label for="continuous-listening">Continuous Listening</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="continuous-listening" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-option">
+                    <label for="speech-rate">Speech Rate</label>
+                    <input type="range" id="speech-rate" min="0.5" max="2" step="0.1" value="1">
+                    <span id="speech-rate-value">1.0</span>
+                </div>
+                <div class="voice-commands">
+                    <h3>Voice Commands</h3>
+                    <ul>
+                        <li><strong>"Stop listening"</strong> - Turn off microphone</li>
+                        <li><strong>"Start listening"</strong> - Turn on microphone</li>
+                        <li><strong>"Clear conversation"</strong> - Reset chat</li>
+                    </ul>
+                </div>
             </div>
             <div class="chat-messages" id="chat-messages">
                 <!-- Hidden text messages -->
             </div>
             <div class="voice-interface" id="voice-interface">
                 <div class="status-text" id="status-text">Click the microphone to start speaking</div>
+                <div class="visualizer-container">
+                    <div id="visualizer" class="visualizer">
+                        <!-- Bars will be added dynamically -->
+                    </div>
+                </div>
                 <button id="mic-button" class="mic-button">
                     <i class="mic-icon">🎤</i>
                 </button>
+                <div id="speech-wave" class="speech-wave" style="display: none;">
+                    <!-- Speech bars will be added dynamically -->
+                </div>
             </div>
             <div class="loading" id="loading">
                 Thinking...
@@ -233,9 +426,108 @@
             const apiKeyError = document.getElementById('api-key-error');
             const micButton = document.getElementById('mic-button');
             const statusText = document.getElementById('status-text');
+            const settingsButton = document.getElementById('settings-button');
+            const settingsPanel = document.getElementById('settings-panel');
+            const voiceSelect = document.getElementById('voice-select');
+            const continuousListeningToggle = document.getElementById('continuous-listening');
+            const speechRateSlider = document.getElementById('speech-rate');
+            const speechRateValue = document.getElementById('speech-rate-value');
+            const visualizer = document.getElementById('visualizer');
+            const speechWave = document.getElementById('speech-wave');
             
             let isListening = false;
             let recognition = null;
+            let audioContext = null;
+            let analyser = null;
+            let microphone = null;
+            let isProcessingCommand = false;
+            let speechRate = 1.0;
+            let selectedVoice = 'en-US';
+            let continuousListening = true;
+            
+            // Create visualizer bars
+            for (let i = 0; i < 50; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'visualizer-bar';
+                visualizer.appendChild(bar);
+            }
+            
+            // Create speech wave bars
+            for (let i = 0; i < 10; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'speech-bar';
+                bar.style.animationDuration = (Math.random() * 500 + 500) + 'ms';
+                speechWave.appendChild(bar);
+            }
+            
+            // Settings panel toggle
+            settingsButton.addEventListener('click', function() {
+                settingsPanel.classList.toggle('visible');
+            });
+            
+            // Close settings panel when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!settingsPanel.contains(event.target) && event.target !== settingsButton) {
+                    settingsPanel.classList.remove('visible');
+                }
+            });
+            
+            // Voice selection
+            voiceSelect.addEventListener('change', function() {
+                selectedVoice = this.value;
+            });
+            
+            // Continuous listening toggle
+            continuousListeningToggle.addEventListener('change', function() {
+                continuousListening = this.checked;
+            });
+            
+            // Speech rate slider
+            speechRateSlider.addEventListener('input', function() {
+                speechRate = parseFloat(this.value);
+                speechRateValue.textContent = speechRate.toFixed(1);
+            });
+            
+            // Initialize audio context for visualizer
+            function initAudioContext() {
+                try {
+                    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioContext = new AudioContext();
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 256;
+                    return true;
+                } catch (e) {
+                    console.error('Web Audio API is not supported in this browser', e);
+                    return false;
+                }
+            }
+            
+            // Update visualizer
+            function updateVisualizer() {
+                if (!analyser) return;
+                
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                analyser.getByteFrequencyData(dataArray);
+                
+                const bars = visualizer.children;
+                const step = Math.floor(bufferLength / bars.length);
+                
+                for (let i = 0; i < bars.length; i++) {
+                    const value = dataArray[i * step];
+                    const height = Math.max(5, value / 2); // Scale down the height
+                    bars[i].style.height = height + 'px';
+                }
+                
+                if (isListening) {
+                    requestAnimationFrame(updateVisualizer);
+                } else {
+                    // Reset bars when not listening
+                    for (let i = 0; i < bars.length; i++) {
+                        bars[i].style.height = '5px';
+                    }
+                }
+            }
             
             // Initialize speech recognition
             function initSpeechRecognition() {
@@ -249,19 +541,48 @@
                 }
                 
                 recognition.continuous = false;
-                recognition.interimResults = false;
+                recognition.interimResults = true;
                 recognition.lang = 'en-US';
                 
                 recognition.onstart = function() {
                     isListening = true;
                     micButton.classList.add('listening');
                     statusText.textContent = "Listening...";
+                    
+                    // Start visualizer if audio context is available
+                    if (audioContext && analyser) {
+                        updateVisualizer();
+                    }
                 };
                 
                 recognition.onresult = function(event) {
                     const transcript = event.results[0][0].transcript;
-                    statusText.textContent = "Processing: " + transcript;
-                    sendMessage(transcript);
+                    
+                    // Check for voice commands
+                    const lowerTranscript = transcript.toLowerCase();
+                    
+                    // Only process final results
+                    if (event.results[0].isFinal) {
+                        statusText.textContent = "Processing: " + transcript;
+                        
+                        // Check for commands
+                        if (lowerTranscript.includes("stop listening")) {
+                            recognition.stop();
+                            statusText.textContent = "Voice command: Stopped listening";
+                            return;
+                        } else if (lowerTranscript.includes("clear conversation")) {
+                            // Clear conversation history
+                            while (chatMessages.firstChild) {
+                                chatMessages.removeChild(chatMessages.firstChild);
+                            }
+                            speak("Conversation cleared");
+                            statusText.textContent = "Voice command: Conversation cleared";
+                            return;
+                        }
+                        
+                        // Process normal message
+                        sendMessage(transcript);
+                    }
                 };
                 
                 recognition.onerror = function(event) {
@@ -274,9 +595,34 @@
                 recognition.onend = function() {
                     isListening = false;
                     micButton.classList.remove('listening');
+                    
+                    // Restart recognition if continuous listening is enabled
+                    if (continuousListening && !isProcessingCommand) {
+                        setTimeout(() => {
+                            recognition.start();
+                        }, 500);
+                    } else {
+                        statusText.textContent = "Click the microphone to start speaking";
+                    }
                 };
                 
+                // Initialize audio context for visualizer
+                initAudioContext();
+                
                 return true;
+            }
+            
+            // Request microphone access for visualizer
+            async function setupMicrophone() {
+                if (!audioContext || !analyser) return;
+                
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                } catch (err) {
+                    console.error('Error accessing microphone:', err);
+                }
             }
             
             // Toggle speech recognition
@@ -289,9 +635,53 @@
                     recognition.stop();
                     statusText.textContent = "Click the microphone to start speaking";
                 } else {
+                    // Request microphone access for visualizer
+                    if (audioContext && !microphone) {
+                        setupMicrophone();
+                    }
+                    
                     recognition.start();
                 }
             });
+            
+            // Text-to-speech function
+            function speak(text) {
+                if ('speechSynthesis' in window) {
+                    // Show speech wave animation
+                    speechWave.style.display = 'flex';
+                    
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = selectedVoice;
+                    utterance.rate = speechRate;
+                    
+                    // Get available voices
+                    const voices = speechSynthesis.getVoices();
+                    
+                    // Try to find a voice that matches the selected language
+                    const voice = voices.find(v => v.lang.startsWith(selectedVoice.split('-')[0]));
+                    if (voice) {
+                        utterance.voice = voice;
+                    }
+                    
+                    utterance.onend = function() {
+                        // Hide speech wave animation
+                        speechWave.style.display = 'none';
+                        
+                        // Resume listening if continuous mode is on
+                        if (continuousListening && !isListening) {
+                            setTimeout(() => {
+                                recognition.start();
+                            }, 500);
+                        } else {
+                            statusText.textContent = "Click the microphone to start speaking";
+                        }
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                    return true;
+                }
+                return false;
+            }
             
             // Function to add a message to the chat (hidden but still tracked)
             function addMessage(message, isUser = false, isError = false) {
@@ -307,6 +697,9 @@
                     if (message.includes('API key') || message.includes('Invalid API key')) {
                         apiKeyError.style.display = 'block';
                     }
+                    
+                    // Speak the error
+                    speak("Sorry, there was an error: " + message);
                 } else if (isUser) {
                     messageElement.classList.add('user-message');
                     messageElement.textContent = message;
@@ -315,16 +708,38 @@
                     
                     // For bot messages with audio
                     if (message.audio) {
+                        // Stop listening while the bot is speaking
+                        if (isListening) {
+                            isProcessingCommand = true;
+                            recognition.stop();
+                        }
+                        
                         // Play audio automatically
                         const audio = new Audio('data:audio/mp3;base64,' + message.audio);
-                        audio.play();
                         
                         // Update status
                         statusText.textContent = "Assistant is speaking...";
                         
+                        // Show speech wave animation
+                        speechWave.style.display = 'flex';
+                        
                         audio.onended = function() {
-                            statusText.textContent = "Click the microphone to start speaking";
+                            // Hide speech wave animation
+                            speechWave.style.display = 'none';
+                            
+                            isProcessingCommand = false;
+                            
+                            // Resume listening if continuous mode is on
+                            if (continuousListening && !isListening) {
+                                setTimeout(() => {
+                                    recognition.start();
+                                }, 500);
+                            } else {
+                                statusText.textContent = "Click the microphone to start speaking";
+                            }
                         };
+                        
+                        audio.play();
                         
                         // Still create the text element but it's hidden
                         const textElement = document.createElement('div');
@@ -333,6 +748,9 @@
                     } else {
                         // Just text for simple bot messages
                         messageElement.textContent = message.text || message;
+                        
+                        // Speak the message using browser's TTS as fallback
+                        speak(message.text || message);
                     }
                 }
                 
@@ -383,6 +801,17 @@
             // Initialize speech recognition on page load
             initSpeechRecognition();
             
+            // Initialize speech synthesis voices
+            if ('speechSynthesis' in window) {
+                // Chrome needs this to get the voices
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = function() {
+                        const voices = speechSynthesis.getVoices();
+                        console.log("Available voices:", voices.length);
+                    };
+                }
+            }
+            
             // Welcome message
             setTimeout(function() {
                 // Simulate a bot message to welcome the user with voice
@@ -391,7 +820,9 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message: "Hello, introduce yourself as a voice assistant" })
+                    body: JSON.stringify({ 
+                        message: "Hello, introduce yourself as an advanced voice assistant powered by Gemini. Explain that you can understand voice commands like 'stop listening' and 'clear conversation'. Tell the user they can click the microphone to start speaking."
+                    })
                 })
                 .then(response => response.json())
                 .then(data => {
